@@ -68,12 +68,19 @@ fn get_form(_request: &mut Request) -> IronResult<Response> {
 }
 
 #[allow(unused_variables)]
-fn filter_city(filter: &str) -> Vec<City> {
+fn filter_city(filter: &str) -> Result<Vec<City>, Error> {
     let filter_upper_decode = unidecode(filter).to_ascii_uppercase();
     let mut compare_string;
     let mut s = String::new();
-    const PATH: &str = "/home/stephane/Code/Rust/ironRestApiStephaneHomePage/assets/citys.json";
-    File::open(PATH).unwrap().read_to_string(&mut s).unwrap();
+    const PATH: &str = "assets/citys.json";
+    let mut file_path: std::path::PathBuf = std::path::PathBuf::new();
+    file_path.push(std::env::current_dir().unwrap().as_path());
+    file_path.push(PATH);
+    println!("{:?}", file_path.as_path());
+    File::open(file_path.as_path())
+        .unwrap()
+        .read_to_string(&mut s)
+        .unwrap();
     let _deserialized: Vec<City> = serde_json::from_str(&s).unwrap();
     let mut city: Vec<City> = Vec::new();
     for x in &_deserialized {
@@ -89,5 +96,5 @@ fn filter_city(filter: &str) -> Vec<City> {
             }
         }
     }
-    city
+    Ok(city)
 }
