@@ -27,6 +27,7 @@ extern crate iron;
 extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
+extern crate unidecode;
 
 use iron::mime::Mime;
 use iron::prelude::*;
@@ -35,6 +36,12 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::fs::File;
 use std::io::Read;
+use unidecode::unidecode;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Error {
+    error: String,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct City {
@@ -54,7 +61,6 @@ fn get_form(_request: &mut Request) -> IronResult<Response> {
     let content_type = "application/json".parse::<Mime>().unwrap();
     response.set_mut(status::Ok);
     response.set_mut(content_type);
-    // response.set_mut(r#"{ response: 'Hello World' }"#);
     let result = filter_city("Genève");
     let json = serde_json::to_string(&result).unwrap();
     response.set_mut(json);
@@ -63,25 +69,25 @@ fn get_form(_request: &mut Request) -> IronResult<Response> {
 
 #[allow(unused_variables)]
 fn filter_city(filter: &str) -> Vec<City> {
-    // let mut json = String::new();
+    let filter_upper_decode = unidecode(filter).to_ascii_uppercase();
+    let mut compare_string;
     let mut s = String::new();
     const PATH: &str = "/home/stephane/Code/Rust/ironRestApiStephaneHomePage/assets/citys.json";
     File::open(PATH).unwrap().read_to_string(&mut s).unwrap();
     let _deserialized: Vec<City> = serde_json::from_str(&s).unwrap();
     let mut city: Vec<City> = Vec::new();
     for x in &_deserialized {
-        city.push(City {
-            country: x.country.clone(),
-            name: x.name.clone(),
-            lat: x.lat.clone(),
-            lng: x.lng.clone(),
-        });
-        // it's wanted to compute the for loop in its way
-        // it's just for test with another rust program
-        // json = format!("{}", x.name);
-        // json = [json, x.name.clone()].concat();
-        //println!("{}", x.name);
+        if filter.len() > 0 {
+            compare_string = unidecode(x.name.clone().as_str()).to_ascii_uppercase();
+            if compare_string.contains(filter_upper_decode.as_str()) {
+                city.push(City {
+                    country: x.country.clone(),
+                    name: x.name.clone(),
+                    lat: x.lat.clone(),
+                    lng: x.lng.clone(),
+                });
+            }
+        }
     }
-    // json
     city
 }
