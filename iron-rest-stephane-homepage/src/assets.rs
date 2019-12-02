@@ -43,7 +43,7 @@ struct CityFinal {
     Flag: String,
 }
 
-fn main() {
+fn generate() {
     const PATH_CITY: &str = "assets/citys.json";
     let mut file_path: std::path::PathBuf = std::path::PathBuf::new();
     file_path.push(std::env::current_dir().unwrap().as_path());
