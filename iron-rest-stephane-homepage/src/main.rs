@@ -92,7 +92,7 @@ pub fn filter_city(filter: &str) -> Vec<City> {
     let filter_upper_decode = unidecode(filter).to_ascii_uppercase();
     let mut compare_string;
     let mut s = String::new();
-    const PATH: &str = "assets/citys.json";
+    const PATH: &str = "assets/citys_flags.json";
     let mut file_path: std::path::PathBuf = std::path::PathBuf::new();
     file_path.push(std::env::current_dir().unwrap().as_path());
     file_path.push(PATH);
