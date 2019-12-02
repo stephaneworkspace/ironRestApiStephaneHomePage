@@ -171,23 +171,24 @@ fn generate() {
 
     let mut city_final: Vec<City> = Vec::new();
     let mut i: i32 = 0;
-    let mut flag: String;
+    //let mut flag: String;
     for x in &_deserialized {
         i += 1;
-        flag = "".to_string();
+        /*flag = "".to_string();
         for y in &_deserialized_flag {
             if y.isoAlpha2 == x.country.clone() {
                 flag = y.flag.clone();
                 break;
             }
-        }
+        }*/
         city_final.push(City {
             Id: i,
             Name: x.name.clone(),
             Lat: x.lat.clone().parse().unwrap(),
             Lng: x.lng.clone().parse().unwrap(),
             Country: x.country.clone(),
-            Flag: flag.clone(),
+            //Flag: flag.clone(),
+            Flag: "".to_string(),
         });
     }
     let _serialized: String = serde_json::to_string(&city_final).unwrap();
