@@ -30,7 +30,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::fs::File;
 use std::io::Read;
-use std::io::Write;
 
 use unidecode::unidecode;
 
@@ -40,15 +39,14 @@ struct Error {
 }
 
 fn main() {
-    println!("Generate asset...");
-    generate();
     println!("Server started on http://localhost:3000 !");
     let mut router = Router::new();
     router.get("/city", get_form_city, "city");
     Iron::new(router).http("0.0.0.0:3000").unwrap();
 }
 
-/// This route is a filter for find a city all over the world in ASCII
+/// This route is a filter for find a city all over the world
+/// in ASCII with flags b64
 fn get_form_city(_request: &mut Request) -> IronResult<Response> {
     use params::{Params, Value};
     let map = _request.get_ref::<Params>().unwrap();
@@ -61,7 +59,7 @@ fn get_form_city(_request: &mut Request) -> IronResult<Response> {
             /*let result: Vec<filter_city::City> =
                 filter_city::filter_city(filter);
             */
-            let result: Vec<City> = filter_city(filter);
+            let result: CityFilter = filter_city(filter);
             let json = serde_json::to_string(&result).unwrap();
             response.set_mut(json);
         }
@@ -77,20 +75,33 @@ fn get_form_city(_request: &mut Request) -> IronResult<Response> {
     Ok(response)
 }
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
-pub struct City {
-    Id: i32,
-    Name: String,
-    Lat: f32,
-    Lng: f32,
-    Country: String,
-    Flag: String,
+pub struct CityFilter {
+    filter: Vec<City>,
+    country: Vec<Country>,
 }
 
-pub fn filter_city(filter: &str) -> Vec<City> {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct City {
+    id: i32,
+    country: String,
+    name: String,
+    lat: f32,
+    lng: f32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Country {
+    country: String,
+    flag: String,
+}
+
+pub fn filter_city(filter: &str) -> CityFilter {
+    // Param
     let filter_upper_decode = unidecode(filter).to_ascii_uppercase();
     let mut compare_string;
+
+    // File
     let mut s = String::new();
     const PATH: &str = "assets/citys_flags.json";
     let mut file_path: std::path::PathBuf = std::path::PathBuf::new();
@@ -101,102 +112,47 @@ pub fn filter_city(filter: &str) -> Vec<City> {
         .unwrap()
         .read_to_string(&mut s)
         .unwrap();
-    let _deserialized: Vec<City> = serde_json::from_str(&s).unwrap();
-    let mut city: Vec<City> = Vec::new();
-    for x in &_deserialized {
+    let _deserialized: CityFilter = serde_json::from_str(&s).unwrap();
+
+    // Json generate output
+    let mut city_filter: CityFilter = CityFilter {
+        filter: Vec::new(),
+        country: Vec::new(),
+    };
+    for x in &_deserialized.filter {
         if filter.len() > 0 {
             compare_string =
-                unidecode(x.Name.clone().as_str()).to_ascii_uppercase();
+                unidecode(x.name.clone().as_str()).to_ascii_uppercase();
             if compare_string.contains(filter_upper_decode.as_str()) {
-                city.push(City {
-                    Id: x.Id.clone(),
-                    Country: x.Country.clone(),
-                    Name: x.Name.clone(),
-                    Lat: x.Lat.clone(),
-                    Lng: x.Lng.clone(),
-                    Flag: x.Flag.clone(),
+                city_filter.filter.push(City {
+                    id: x.id.clone(),
+                    country: x.country.clone(),
+                    name: x.name.clone(),
+                    lat: x.lat.clone(),
+                    lng: x.lng.clone(),
                 });
+
+                // Check if country in city_filter.country
+                let mut sw = false;
+                let mut country: Country = Country {
+                    country: "".to_string(),
+                    flag: "".to_string(),
+                };
+                for y in &_deserialized.country {
+                    if y.country == x.country {
+                        sw = true;
+                        country = Country {
+                            country: y.country.clone(),
+                            flag: y.flag.clone(),
+                        };
+                        break;
+                    }
+                }
+                if sw {
+                    city_filter.country.push(country);
+                }
             }
         }
     }
-    city
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct CityInitial {
-    country: String,
-    name: String,
-    lat: String,
-    lng: String,
-}
-
-#[allow(non_snake_case)]
-#[derive(Deserialize, Debug, PartialEq, Eq)]
-struct Flag {
-    id: i32,
-    name: String,
-    isoAlpha2: String,
-    isoAlpha3: String,
-    isoNumeric: i32,
-    currency: Currency,
-    flag: String,
-}
-
-#[allow(non_snake_case)]
-#[derive(Deserialize, Debug, PartialEq, Eq)]
-struct Currency {}
-
-fn generate() {
-    const PATH_CITY: &str = "assets/citys.json";
-    let mut file_path: std::path::PathBuf = std::path::PathBuf::new();
-    file_path.push(std::env::current_dir().unwrap().as_path());
-    file_path.push(PATH_CITY);
-    let mut s = String::new();
-    File::open(file_path.as_path())
-        .unwrap()
-        .read_to_string(&mut s)
-        .unwrap();
-    let _deserialized: Vec<CityInitial> = serde_json::from_str(&s).unwrap();
-
-    const PATH_FLAG: &str = "assets/flags.json";
-    let mut file_path_flag: std::path::PathBuf = std::path::PathBuf::new();
-    file_path_flag.push(std::env::current_dir().unwrap().as_path());
-    file_path_flag.push(PATH_FLAG);
-    let mut f = String::new();
-    File::open(file_path_flag.as_path())
-        .unwrap()
-        .read_to_string(&mut f)
-        .unwrap();
-    let _deserialized_flag: Vec<Flag> = serde_json::from_str(&f).unwrap();
-
-    let mut city_final: Vec<City> = Vec::new();
-    let mut i: i32 = 0;
-    //let mut flag: String;
-    for x in &_deserialized {
-        i += 1;
-        /*flag = "".to_string();
-        for y in &_deserialized_flag {
-            if y.isoAlpha2 == x.country.clone() {
-                flag = y.flag.clone();
-                break;
-            }
-        }*/
-        city_final.push(City {
-            Id: i,
-            Name: x.name.clone(),
-            Lat: x.lat.clone().parse().unwrap(),
-            Lng: x.lng.clone().parse().unwrap(),
-            Country: x.country.clone(),
-            //Flag: flag.clone(),
-            Flag: "".to_string(),
-        });
-    }
-    let _serialized: String = serde_json::to_string(&city_final).unwrap();
-    const PATH_WRITE: &str = "assets/citys_flags.json";
-    let mut file_path_write: std::path::PathBuf = std::path::PathBuf::new();
-    file_path_write.push(std::env::current_dir().unwrap().as_path());
-    file_path_write.push(PATH_WRITE);
-    let mut buffer = File::create(file_path_write.as_path()).unwrap();
-    buffer.write_all(_serialized.as_bytes()).unwrap();
-    buffer.flush().unwrap();
+    city_filter
 }
