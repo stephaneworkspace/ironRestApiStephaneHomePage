@@ -133,6 +133,7 @@ pub fn filter_city(filter: &str) -> CityFilter {
                 });
 
                 // Check if country in city_filter.country
+                /*
                 let mut sw = false;
                 let mut country: Country = Country {
                     country: "".to_string(),
@@ -154,7 +155,7 @@ pub fn filter_city(filter: &str) -> CityFilter {
                         country: country.country,
                         flag: "".to_string(),
                     });
-                }
+                }*/
             }
         }
     }
