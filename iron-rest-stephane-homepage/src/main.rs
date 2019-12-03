@@ -84,10 +84,10 @@ pub struct CityFilter {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct City {
     id: i32,
-    country: String,
     name: String,
     lat: f32,
     lng: f32,
+    country: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
