@@ -149,7 +149,11 @@ pub fn filter_city(filter: &str) -> CityFilter {
                     }
                 }
                 if sw {
-                    city_filter.country.push(country);
+                    //city_filter.country.push(country);
+                    city_filter.country.push(Country {
+                        country: country.country,
+                        flag: "".to_string(),
+                    });
                 }
             }
         }
